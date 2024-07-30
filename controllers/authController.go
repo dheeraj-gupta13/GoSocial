@@ -76,6 +76,8 @@ func Login(c *gin.Context) {
 
 func Register(c *gin.Context) {
 
+	fmt.Println("into REGISTER")
+
 	var creds Credentials
 
 	if err := c.BindJSON(&creds); err != nil {
@@ -91,11 +93,17 @@ func Register(c *gin.Context) {
 
 	db := database.GetDB()
 
+	fmt.Println("DB =========>", db)
+
 	newPassword := string(hashedPassword)
 	query := `INSERT INTO users (email, username, password, created_at) VALUES ($1, $2, $3, $4)`
 
+	fmt.Println(creds.Email);
+	fmt.Println(creds.Username);
+	fmt.Println(creds.Password);
 	_, err = db.Exec(query, creds.Email, creds.Username, newPassword, time.Now())
 	if err != nil {
+		fmt.Println("ERROR 34", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while creating user"})
 		return
 	}
@@ -109,7 +117,7 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	query2 := `INSERT INTO profiles (user_id, image, headline, name, created_at) VALUES ($1, $2, $3, $4, $5)`
+	query2 := `INSERT INTO profile (user_id, image, headline, name, created_at) VALUES ($1, $2, $3, $4, $5)`
 	_, err2 := db.Exec(query2, userID, "", "", "", time.Now())
 	if err2 != nil {
 		fmt.Println("Error while inserting", err2)

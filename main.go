@@ -1,16 +1,16 @@
 /*
 
-Table user {
+Table users {
   id bigserial [pk]
   email varchar
   username varchar [not null]
-  password bigint [not null]
+  password varchar [not null]
   created_at timestampz [default: `now()`]
 }
 
 Table profile {
   id bigserial [pk]
-  userId bigserial [ref:>user.id]
+  userId bigserial [ref:>users.id]
   image varchar [not null]
   headline varchar
   name varchar
@@ -19,7 +19,7 @@ Table profile {
 
 Table post {
   id bigserial [pk]
-  createdby bigserial [ref:>user.id]
+  createdby bigserial [ref:>users.id]
   content varchar
   imageUrl string
   created_at timestampz [default: `now()`]
@@ -29,7 +29,6 @@ Table Likes {
   id bigserial [pk]
   postId bigserial [ref:> post.id]
   userId bigserial [ref:> user.id]
-
 }
 
 Table Comments {
@@ -37,6 +36,7 @@ Table Comments {
   postId bigserial [ref:> post.id]
   userId bigserial [ref:> user.id]
   comment varchar
+  commented_at timestampz [default: `now()`]
 }
 
 Table Followers {
@@ -44,6 +44,20 @@ Table Followers {
   followee_id bigserial [ref :> user.id]
   followed_at timestampz [default: `now()`]
 }
+
+Table Saved {
+	id bigserial [pk],
+	postId bigserial [ref:> post.id]
+  	userId bigserial [ref:> users.id]
+  	created_at timestampz [default: `now()`]
+}
+
+CREATE TABLE Saved (
+    id BIGSERIAL PRIMARY KEY,
+    postId BIGSERIAL REFERENCES post(id),
+    userId BIGSERIAL REFERENCES users(id),
+    created_at TIMESTAMPTZ DEFAULT now()
+);
 
 
 */
@@ -61,9 +75,13 @@ import (
 	"social-backend/database"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/gin-contrib/cors"
 )
 
 func main() {
+
+	print("Hello, world")
 
 	// Initialize the database connection
 	_, err := database.InitDB()
@@ -80,7 +98,12 @@ func main() {
 
 	// config := cors.DefaultConfig()
 	// config.AllowAllOrigins = true
-	// router.Use(cors.New(config))
+	config := cors.Config{
+		AllowAllOrigins: true,
+		AllowHeaders:    []string{"Origin", "Content-Length", "Content-Type", "Authorization"},
+		AllowMethods:    []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+	}
+	router.Use(cors.New(config))
 
 	router.Use(gin.Logger())
 

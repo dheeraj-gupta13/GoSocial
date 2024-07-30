@@ -20,15 +20,19 @@ func AddLike(c *gin.Context) {
 
 	var postId PostID
 	if err := c.BindJSON(&postId); err != nil {
+		fmt.Println(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
 		return
 	}
+
+	fmt.Println(postId)
 
 	db := database.GetDB()
 	query := `INSERT INTO likes (post_id, user_id, created_at) VALUES ($1, $2, $3)`
 
 	_, err := db.Exec(query, postId.PostID, currentUserId, time.Now())
 	if err != nil {
+		fmt.Println(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while creating like"})
 		return
 	}
@@ -41,17 +45,26 @@ func Unlike(c *gin.Context) {
 
 	_, currentUserId := middleware.GetCurrentUser(c)
 
-	var postId PostID
-	if err := c.BindJSON(&postId); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+	// var postId PostID
+	// if err := c.BindJSON(&postId); err != nil {
+	// 	fmt.Println("1", err)
+	// 	c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+	// 	return
+	// }
+	postId := c.Query("postId")
+	if postId == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "postId is required"})
 		return
 	}
+
+	fmt.Println("1", postId)
 
 	db := database.GetDB()
 	query := `DELETE FROM likes WHERE post_id = $1 AND user_id = $2`
 
-	_, err := db.Exec(query, postId.PostID, currentUserId)
+	_, err := db.Exec(query, postId, currentUserId)
 	if err != nil {
+		fmt.Println("2", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while removing like"})
 		return
 	}

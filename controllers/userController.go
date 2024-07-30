@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"social-backend/database"
+	"social-backend/middleware"
 	"social-backend/models"
 	"time"
 
@@ -68,4 +69,42 @@ func PostUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "User created successfully", "email": newUser.Email, "password": newUser.Password, "username": newUser.Username})
+}
+
+func GetUserInfo(c *gin.Context) {
+	_, currentUserId := middleware.GetCurrentUser(c)
+
+	db := database.GetDB()
+
+	fmt.Println(currentUserId)
+
+	query := `
+			  SELECT u.id, u.email, u.username, p.image, p.headline, p.name 
+			  FROM users u
+			  INNER JOIN profile p 
+			  ON u.id = p.user_id
+			  WHERE u.id = $1
+			`
+
+	rows, err := db.Query(query, currentUserId)
+	if err != nil {
+		fmt.Println("Error while inserting", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to insert user"})
+		return
+	}
+
+	var userProfile models.UserProfile
+	if rows.Next() {
+		err = rows.Scan(&userProfile.Id, &userProfile.Email, &userProfile.Username, &userProfile.Image, &userProfile.Headline, &userProfile.Name)
+		if err != nil {
+			fmt.Println("Error while scanning", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user data"})
+			return
+		}
+	} else {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Get User successfully", "row": userProfile})
 }
