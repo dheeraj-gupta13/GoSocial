@@ -6,8 +6,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func LikeRoutes(incomingRoutes *gin.Engine) {
+func LikeRoutes(incomingRoutes *gin.RouterGroup) {
 	incomingRoutes.POST("/like", controller.AddLike)
 	incomingRoutes.DELETE("/like", controller.Unlike)
 	incomingRoutes.GET("/like", controller.GetLikes)
+	incomingRoutes.GET("/reactionType", controller.GetReactionId)
 }

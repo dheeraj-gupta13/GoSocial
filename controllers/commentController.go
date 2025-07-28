@@ -11,7 +11,7 @@ import (
 )
 
 type Comment struct {
-	PostId  int    `json:"postId"`
+	Post_id int    `json:"post_id"`
 	Comment string `json:"comment"`
 }
 
@@ -27,8 +27,12 @@ func AddComment(c *gin.Context) {
 	db := database.GetDB()
 	query := `INSERT INTO comments (post_id, user_id, comment, created_at) VALUES ($1, $2, $3, $4)`
 
-	_, err := db.Exec(query, comment.PostId, currentUserId, comment.Comment, time.Now())
+	_, err := db.Exec(query, comment.Post_id, currentUserId, comment.Comment, time.Now())
 	if err != nil {
+		fmt.Println("EEEEEEEEEE", err)
+		fmt.Println("POST ID", comment.Post_id)
+		fmt.Println("USER ID", comment.Comment)
+
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while creating comment"})
 		return
 	}
@@ -43,7 +47,10 @@ func GetCommentsForPost(c *gin.Context) {
 	fmt.Println("postId", postId)
 
 	db := database.GetDB()
-	query := `SELECT id, user_id, comment, created_at FROM comments WHERE post_id = $1`
+	query := `SELECT c.comment_id, u.username, c.comment, c.created_at 
+	FROM comments c JOIN users u 
+	ON c.user_id = u.user_id
+	WHERE post_id = $1`
 
 	rows, err := db.Query(query, postId)
 	if err != nil {
@@ -56,12 +63,12 @@ func GetCommentsForPost(c *gin.Context) {
 	var comments []gin.H
 
 	for rows.Next() {
-		var id int
-		var user_id int
+		var comment_id int
+		var username string
 		var comment string
 		var createdAt string
 
-		err := rows.Scan(&id, &user_id, &comment, &createdAt)
+		err := rows.Scan(&comment_id, &username, &comment, &createdAt)
 		if err != nil {
 			fmt.Println("*********", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while creating post"})
@@ -69,9 +76,9 @@ func GetCommentsForPost(c *gin.Context) {
 		}
 
 		post := gin.H{
-			"post_id":    id,
+			"comment_id": comment_id,
 			"comment":    comment,
-			"user_id":    user_id,
+			"username":   username,
 			"created_at": createdAt,
 		}
 		comments = append(comments, post)

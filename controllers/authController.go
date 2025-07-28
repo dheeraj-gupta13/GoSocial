@@ -2,9 +2,9 @@ package controllers
 
 import (
 	"database/sql"
-	"fmt"
 	"net/http"
 	"social-backend/database"
+	"social-backend/models"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -14,21 +14,54 @@ import (
 
 var jwtKey = []byte("your_secret_key")
 
-type Credentials struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Username string `json:"username`
+// Register the user
+func Register(c *gin.Context) {
+
+	var creds models.Credentials
+
+	if err := c.BindJSON(&creds); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		return
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(creds.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while hashing password"})
+		return
+	}
+
+	db := database.GetDB()
+
+	newPassword := string(hashedPassword)
+	query := `INSERT INTO users (email, username, password, created_on) VALUES ($1, $2, $3, $4)`
+
+	_, err = db.Exec(query, creds.Email, creds.Username, newPassword, time.Now())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while creating user"})
+		return
+	}
+
+	var user_id int
+	err3 := db.QueryRow("SELECT user_id  FROM users WHERE username = $1", creds.Username).Scan(&user_id)
+	if err3 != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetching user"})
+		return
+	}
+
+	query2 := `INSERT INTO profile (user_id, avatar_url, background_url, biodata, created_on) VALUES ($1, $2, $3, $4, $5)`
+	_, err2 := db.Exec(query2, user_id, "", "", "", time.Now())
+	if err2 != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to insert profile "})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
 }
 
-type Claims struct {
-	Username string `json:"username"`
-	Id       int    `json:"id"`
-	jwt.StandardClaims
-}
-
+// Login the user
 func Login(c *gin.Context) {
 
-	var creds Credentials
+	var creds models.Credentials
 	if err := c.BindJSON(&creds); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
 		return
@@ -36,8 +69,8 @@ func Login(c *gin.Context) {
 
 	db := database.GetDB()
 	var storedPassword string
-	var userId int
-	err := db.QueryRow("SELECT password, id FROM users WHERE username = $1", creds.Username).Scan(&storedPassword, &userId)
+	var user_id int
+	err := db.QueryRow("SELECT password, user_id FROM users WHERE username = $1", creds.Username).Scan(&storedPassword, &user_id)
 
 	if err == sql.ErrNoRows {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
@@ -55,9 +88,9 @@ func Login(c *gin.Context) {
 
 	expirationTime := time.Now().Add(8 * time.Hour)
 
-	claims := &Claims{
+	claims := &models.Claims{
 		Username: creds.Username,
-		Id:       userId,
+		Id:       user_id,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
 		},
@@ -72,58 +105,4 @@ func Login(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"token": tokenString})
 
-}
-
-func Register(c *gin.Context) {
-
-	fmt.Println("into REGISTER")
-
-	var creds Credentials
-
-	if err := c.BindJSON(&creds); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
-		return
-	}
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(creds.Password), bcrypt.DefaultCost)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while hashing password"})
-		return
-	}
-
-	db := database.GetDB()
-
-	fmt.Println("DB =========>", db)
-
-	newPassword := string(hashedPassword)
-	query := `INSERT INTO users (email, username, password, created_at) VALUES ($1, $2, $3, $4)`
-
-	fmt.Println(creds.Email);
-	fmt.Println(creds.Username);
-	fmt.Println(creds.Password);
-	_, err = db.Exec(query, creds.Email, creds.Username, newPassword, time.Now())
-	if err != nil {
-		fmt.Println("ERROR 34", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while creating user"})
-		return
-	}
-
-	var userID int
-	err3 := db.QueryRow("SELECT id  FROM users WHERE username = $1", creds.Username).Scan(&userID)
-	fmt.Println("*****", userID)
-	if err3 != nil {
-		fmt.Println("Error while fetching user", err3)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetching user"})
-		return
-	}
-
-	query2 := `INSERT INTO profile (user_id, image, headline, name, created_at) VALUES ($1, $2, $3, $4, $5)`
-	_, err2 := db.Exec(query2, userID, "", "", "", time.Now())
-	if err2 != nil {
-		fmt.Println("Error while inserting", err2)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to insert profile "})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
 }

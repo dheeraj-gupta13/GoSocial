@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"social-backend/database"
-	"social-backend/middleware"
 	"social-backend/models"
 	"time"
 
@@ -15,7 +14,7 @@ func GetUsers(c *gin.Context) {
 	db := database.GetDB()
 
 	// Example query to fetch all users
-	query := `SELECT email, username, created_at FROM users`
+	query := `SELECT email, username, created_on FROM users`
 
 	rows, err := db.Query(query)
 	if err != nil {
@@ -30,7 +29,7 @@ func GetUsers(c *gin.Context) {
 	var users []models.User
 	for rows.Next() {
 		var user models.User
-		err := rows.Scan(&user.Email, &user.Username, &user.Created_at)
+		err := rows.Scan(&user.Email, &user.Username, &user.Created_on)
 		if err != nil {
 			fmt.Println("Error scanning user row:", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
@@ -72,39 +71,39 @@ func PostUser(c *gin.Context) {
 }
 
 func GetUserInfo(c *gin.Context) {
-	_, currentUserId := middleware.GetCurrentUser(c)
+	// _, currentUserId := middleware.GetCurrentUser(c)
 
-	db := database.GetDB()
+	// db := database.GetDB()
 
-	fmt.Println(currentUserId)
+	// fmt.Println(currentUserId)
 
-	query := `
-			  SELECT u.id, u.email, u.username, p.image, p.headline, p.name 
-			  FROM users u
-			  INNER JOIN profile p 
-			  ON u.id = p.user_id
-			  WHERE u.id = $1
-			`
+	// query := `
+	// 		  SELECT u.id, u.email, u.username, p.image, p.headline, p.name
+	// 		  FROM users u
+	// 		  INNER JOIN profile p
+	// 		  ON u.id = p.user_id
+	// 		  WHERE u.id = $1
+	// 		`
 
-	rows, err := db.Query(query, currentUserId)
-	if err != nil {
-		fmt.Println("Error while inserting", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to insert user"})
-		return
-	}
+	// rows, err := db.Query(query, currentUserId)
+	// if err != nil {
+	// 	fmt.Println("Error while inserting", err)
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to insert user"})
+	// 	return
+	// }
 
-	var userProfile models.UserProfile
-	if rows.Next() {
-		err = rows.Scan(&userProfile.Id, &userProfile.Email, &userProfile.Username, &userProfile.Image, &userProfile.Headline, &userProfile.Name)
-		if err != nil {
-			fmt.Println("Error while scanning", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user data"})
-			return
-		}
-	} else {
-		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
-		return
-	}
+	// var userProfile models.Profile
+	// if rows.Next() {
+	// 	err = rows.Scan(&userProfile.User_id, &userProfile.Email, &userProfile.Username, &userProfile.Image, &userProfile.Headline, &userProfile.Name)
+	// 	if err != nil {
+	// 		fmt.Println("Error while scanning", err)
+	// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user data"})
+	// 		return
+	// 	}
+	// } else {
+	// 	c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+	// 	return
+	// }
 
-	c.JSON(http.StatusOK, gin.H{"message": "Get User successfully", "row": userProfile})
+	c.JSON(http.StatusOK, gin.H{"message": "Get User successfully", "row": "userProfile"})
 }

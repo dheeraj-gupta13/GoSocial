@@ -6,9 +6,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func UserRoutes(incomingRoutes *gin.Engine) {
+func UserRoutes(incomingRoutes *gin.RouterGroup) {
 
 	incomingRoutes.GET("/users", controller.GetUsers)
-	incomingRoutes.POST("/users", controller.PostUser)
-	incomingRoutes.GET("/user", controller.GetUserInfo)
+	// incomingRoutes.POST("/users", controller.PostUser)
+	// incomingRoutes.GET("/user", controller.GetUserInfo)
 }

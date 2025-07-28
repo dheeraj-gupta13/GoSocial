@@ -1,16 +1,12 @@
 package routes
 
 import (
-	"fmt"
 	controller "social-backend/controllers"
 
 	"github.com/gin-gonic/gin"
 )
 
-func AuthRoutes(incomingRoutes *gin.Engine) {
-
-	fmt.Printf("=============>")
-
+func AuthRoutes(incomingRoutes *gin.RouterGroup) {
 	incomingRoutes.POST("/login", controller.Login)
 	incomingRoutes.POST("/register", controller.Register)
 }

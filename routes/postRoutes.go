@@ -6,10 +6,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func PostRoutes(incomingRoutes *gin.Engine) {
+func PostRoutes(incomingRoutes *gin.RouterGroup) {
 	incomingRoutes.POST("/post", controller.AddPost)
 	incomingRoutes.GET("/post/getUserPosts", controller.GetUsersPost)
 	incomingRoutes.GET("/post/getAllPosts", controller.GetAllPosts)
 	incomingRoutes.DELETE("/post", controller.DeletePost)
-	incomingRoutes.POST("/save", controller.SavePost)
+	// incomingRoutes.POST("/save", controller.SavePost)
 }

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -18,6 +19,7 @@ type Claims struct {
 
 func Authentication() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		fmt.Printf("Entere Auth middleware")
 		tokenString := c.GetHeader("Authorization")
 		if tokenString == "" {
 			c.AbortWithStatus(http.StatusForbidden)
@@ -40,7 +42,6 @@ func Authentication() gin.HandlerFunc {
 		c.Set("id", claims.Id)
 		c.Next()
 	}
-
 }
 
 func GetCurrentUser(c *gin.Context) (string, int) {
