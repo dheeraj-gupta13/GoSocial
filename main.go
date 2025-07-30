@@ -1,67 +1,3 @@
-/*
-
-Table users {
-  id bigserial [pk]
-  email varchar
-  username varchar [not null]
-  password varchar [not null]
-  created_at timestampz [default: `now()`]
-}
-
-Table profile {
-  id bigserial [pk]
-  userId bigserial [ref:>users.id]
-  image varchar [not null]
-  headline varchar
-  name varchar
-  created_at timestampz [default: `now()`]
-}
-
-Table post {
-  id bigserial [pk]
-  createdby bigserial [ref:>users.id]
-  content varchar
-  imageUrl string
-  created_at timestampz [default: `now()`]
-}
-
-Table Likes {
-  id bigserial [pk]
-  postId bigserial [ref:> post.id]
-  userId bigserial [ref:> user.id]
-}
-
-Table Comments {
-  id bigserial [pk]
-  postId bigserial [ref:> post.id]
-  userId bigserial [ref:> user.id]
-  comment varchar
-  commented_at timestampz [default: `now()`]
-}
-
-Table Followers {
-  follower_id bigserial [ref :> user.id]
-  followee_id bigserial [ref :> user.id]
-  followed_at timestampz [default: `now()`]
-}
-
-Table Saved {
-	id bigserial [pk],
-	postId bigserial [ref:> post.id]
-  	userId bigserial [ref:> users.id]
-  	created_at timestampz [default: `now()`]
-}
-
-CREATE TABLE Saved (
-    id BIGSERIAL PRIMARY KEY,
-    postId BIGSERIAL REFERENCES post(id),
-    userId BIGSERIAL REFERENCES users(id),
-    created_at TIMESTAMPTZ DEFAULT now()
-);
-
-
-*/
-
 package main
 
 import (
@@ -130,6 +66,7 @@ func main() {
 	routes.PostRoutes(protected)
 	routes.CommentRoutes(protected)
 	routes.LikeRoutes(protected)
+	routes.ProfileRoutes(protected)
 
 	fmt.Printf("Listening on port %s", port)
 	router.Run(":" + port)

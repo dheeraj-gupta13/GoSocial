@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"social-backend/database"
 	"social-backend/models"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -105,4 +106,30 @@ func Login(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"token": tokenString})
 
+}
+
+func ValidateToken(c *gin.Context) {
+	authHeader := c.GetHeader("Authorization")
+
+	if authHeader == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"validated": false, "error": "No Authorization  found"})
+		return
+	}
+
+	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+	if tokenString == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"validated": false, "error": "No  token found"})
+		return
+	}
+
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return jwtKey, nil
+	})
+
+	if err != nil || !token.Valid {
+		c.JSON(http.StatusUnauthorized, gin.H{"validated": false, "error": "Invalid token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"validated": true, "message": "Token is valid"})
 }

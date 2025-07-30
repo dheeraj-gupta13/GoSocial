@@ -9,4 +9,5 @@ import (
 func AuthRoutes(incomingRoutes *gin.RouterGroup) {
 	incomingRoutes.POST("/login", controller.Login)
 	incomingRoutes.POST("/register", controller.Register)
+	incomingRoutes.GET("/validateToken", controller.ValidateToken)
 }
