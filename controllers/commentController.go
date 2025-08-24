@@ -47,9 +47,11 @@ func GetCommentsForPost(c *gin.Context) {
 	fmt.Println("postId", postId)
 
 	db := database.GetDB()
-	query := `SELECT c.comment_id, u.username, c.comment, c.created_at 
-	FROM comments c JOIN users u 
-	ON c.user_id = u.user_id
+	query := `SELECT c.comment_id, u.username, c.comment, c.created_at, p.avatar_url 
+	FROM comments c 
+	JOIN users u ON c.user_id = u.user_id
+	JOIN profile p ON p.user_id = u.user_id
+
 	WHERE post_id = $1`
 
 	rows, err := db.Query(query, postId)
@@ -66,20 +68,24 @@ func GetCommentsForPost(c *gin.Context) {
 		var comment_id int
 		var username string
 		var comment string
-		var createdAt string
+		var createdAt time.Time
+		var avatar_url string
 
-		err := rows.Scan(&comment_id, &username, &comment, &createdAt)
+		err := rows.Scan(&comment_id, &username, &comment, &createdAt, &avatar_url)
 		if err != nil {
 			fmt.Println("*********", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while creating post"})
 			return
 		}
 
+		createdFromNow := timeAgo(createdAt)
+		fmt.Println("createdFromNow ", createdFromNow)
 		post := gin.H{
 			"comment_id": comment_id,
 			"comment":    comment,
 			"username":   username,
-			"created_at": createdAt,
+			"created_at": createdFromNow,
+			"avatar_url": avatar_url,
 		}
 		comments = append(comments, post)
 	}

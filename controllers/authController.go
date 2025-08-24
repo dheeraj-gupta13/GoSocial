@@ -50,7 +50,7 @@ func Register(c *gin.Context) {
 	}
 
 	query2 := `INSERT INTO profile (user_id, avatar_url, background_url, biodata, created_on) VALUES ($1, $2, $3, $4, $5)`
-	_, err2 := db.Exec(query2, user_id, "", "", "", time.Now())
+	_, err2 := db.Exec(query2, user_id, "https://res.cloudinary.com/dol59d0b3/image/upload/v1755956191/profiles/blob.png", "https://res.cloudinary.com/dol59d0b3/image/upload/v1755957313/backgrounds/blob.jpg", "Hey!", time.Now())
 	if err2 != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to insert profile "})
 		return

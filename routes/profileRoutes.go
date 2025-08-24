@@ -11,6 +11,7 @@ func ProfileRoutes(incomingRoutes *gin.RouterGroup) {
 	incomingRoutes.GET("/profile", controller.GetProfile)
 	incomingRoutes.POST("/follow", controller.Follow)
 	incomingRoutes.DELETE("/unfollow", controller.UnFollow)
+	incomingRoutes.PUT("/updateProfile", controller.UpdateProfile)
 	// incomingRoutes.POST("/users", controller.PostUser)
 	// incomingRoutes.GET("/user", controller.GetUserInfo)
 }
