@@ -10,7 +10,7 @@ type User struct {
 	IsEmailVerified bool   `json:"is_email_verified"`
 }
 
-type Profile struct {
+type UserProfile struct {
 	Profile_id     int    `json:"profile_id"`
 	User_id        string `json:"user_id"`
 	Avatar_url     string `json:"avatar_url"`

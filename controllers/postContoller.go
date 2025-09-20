@@ -10,6 +10,7 @@ import (
 
 	"social-backend/database"
 	"social-backend/middleware"
+	"social-backend/models"
 
 	"github.com/cloudinary/cloudinary-go"
 	"github.com/cloudinary/cloudinary-go/api/uploader"
@@ -222,25 +223,26 @@ func GetAllPosts(c *gin.Context) {
 	rows, err := db.Query(query)
 	if err != nil {
 		fmt.Println("error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while retrieving posts"})
+		c.JSON(http.StatusInternalServerError, models.ApiResponse[any]{
+			Success: false,
+			Error:   &models.ErrPostNotFound,
+		})
 		return
 	}
 	defer rows.Close()
 
-	var posts []gin.H
+	var posts []models.Post
 
 	for rows.Next() {
-		var post_id int
-		var content string
-		var image_url string
-		var created_at time.Time
-		var user_id int
-		var username string
-		var avatar_url string
+		var post models.Post
+		var createdAt time.Time
 
-		err := rows.Scan(&post_id, &content, &image_url, &created_at, &user_id, &username, &avatar_url)
+		err := rows.Scan(&post.PostID, &post.Content, &post.ImageURL, &createdAt, &post.UserID, &post.Username, &post.AvatarURL)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while creating post"})
+			c.JSON(http.StatusInternalServerError, models.ApiResponse[any]{
+				Success: false,
+				Error:   &models.ErrInternalServer,
+			})
 			return
 		}
 
@@ -248,72 +250,69 @@ func GetAllPosts(c *gin.Context) {
 							FROM postReactions p JOIN users u  
 							ON p.user_id = u.user_id
 						WHERE post_id = $1`
-		reactions, err := db.Query(likesQuery, post_id)
+		reactions, err := db.Query(likesQuery, post.PostID)
 		if err != nil {
-			fmt.Println(http.StatusInternalServerError, gin.H{"error": err})
+			c.JSON(http.StatusInternalServerError, models.ApiResponse[any]{
+				Success: false,
+				Error:   &models.ErrInternalServer,
+			})
 			return
 		}
-		var reactionArr []gin.H
+		var reactionArr []models.Reaction
 		for reactions.Next() {
-			var who_reacted string
-			var what_reacted int
+			var single_reaction models.Reaction
 
-			err2 := reactions.Scan(&who_reacted, &what_reacted)
+			err2 := reactions.Scan(&single_reaction.WhoReacted, &single_reaction.WhatReacted)
 			if err2 != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err2})
+				c.JSON(http.StatusInternalServerError, models.ApiResponse[any]{
+					Success: false,
+					Error:   &models.ErrInternalServer,
+				})
 				return
 			}
-
-			single_reaction := gin.H{
-				"who_reacted":  who_reacted,
-				"what_reacted": what_reacted,
-			}
-
 			reactionArr = append(reactionArr, single_reaction)
 		}
+		post.Reactions = reactionArr
 
 		var doIFollow int
 		query = `SELECT id FROM followers WHERE following_user_id = $1 AND followed_user_id = $2`
-		err4 := db.QueryRow(query, currentUserId, user_id).Scan(&doIFollow)
+		err4 := db.QueryRow(query, currentUserId, post.UserID).Scan(&doIFollow)
 		if err4 != nil {
 			if err4 == sql.ErrNoRows {
 				doIFollow = 0
 			} else {
-				fmt.Println("Error checking follow status:", err4)
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while checking follow status"})
+				c.JSON(http.StatusInternalServerError, models.ApiResponse[any]{
+					Success: false,
+					Error:   &models.ErrInternalServer,
+				})
 				return
 			}
 		}
 
-		if currentUserId == user_id {
+		if currentUserId == post.UserID {
 			doIFollow = -1
 		}
 
-		createdFromNow := timeAgo(created_at)
-		fmt.Println("createdFromNow ", createdFromNow)
-		post := gin.H{
-			"post_id":        post_id,
-			"content":        content,
-			"image_url":      image_url,
-			"created_at":     createdFromNow,
-			"user_id":        user_id,
-			"username":       username,
-			"avatar_url":     avatar_url,
-			"reaction_array": reactionArr,
-			"do_I_follow":    doIFollow,
-		}
+		post.DoIFollow = doIFollow
+		post.CreatedAt = timeAgo(createdAt)
 		posts = append(posts, post)
 	}
 
 	if err = rows.Err(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error after retrieving posts"})
+		c.JSON(http.StatusInternalServerError, models.ApiResponse[any]{
+			Success: false,
+			Error:   &models.ErrInternalServer,
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"username": currentUsername,
-		"user_id":  currentUserId,
-		"posts":    posts,
+	c.JSON(http.StatusOK, models.ApiResponse[models.PostsResponse]{
+		Success: true,
+		Data: models.PostsResponse{
+			UserID:   currentUserId,
+			Username: currentUsername,
+			Posts:    posts,
+		},
 	})
 }
 

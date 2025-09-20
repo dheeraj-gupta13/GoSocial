@@ -8,6 +8,7 @@ import (
 	"os"
 	"social-backend/database"
 	"social-backend/middleware"
+	"social-backend/models"
 	"time"
 
 	"github.com/cloudinary/cloudinary-go"
@@ -17,7 +18,6 @@ import (
 
 func GetProfile(c *gin.Context) {
 	_, currentUserId := middleware.GetCurrentUser(c)
-
 	input_username := c.Query("username")
 
 	db := database.GetDB()
@@ -30,28 +30,16 @@ func GetProfile(c *gin.Context) {
 		return
 	}
 
-	// id := c.Query("user_id")
-
 	query := `SELECT p.profile_id, p.user_id, p.avatar_url , p.background_url, p.biodata, p.created_on , u.username
 	FROM profile p JOIN users u 
 	ON p.user_id = u.user_id
 	WHERE u.user_id = $1`
 
 	row := db.QueryRow(query, id)
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "error while query profile"})
-	// }
 
-	// for rows.Next() {
-	var profile_id int
-	var user_id int
-	var avatar_url string
-	var background_url string
-	var biodata string
-	var created_on string
-	var username string
+	var p models.Profile // our resultant profile
 
-	err := row.Scan(&profile_id, &user_id, &avatar_url, &background_url, &biodata, &created_on, &username)
+	err := row.Scan(&p.ProfileID, &p.UserID, &p.AvatarURL, &p.BackgroundURL, &p.Biodata, &p.CreatedOn, &p.Username)
 	if err != nil {
 		fmt.Println("*********", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while creating profile"})
@@ -71,25 +59,20 @@ func GetProfile(c *gin.Context) {
 
 	fmt.Print("LOW_KEY", rows)
 
-	var followers []gin.H
+	var followers []models.UserMini
 	for rows.Next() {
-		var username string
-		var user_id int
+		var follower models.UserMini
 
-		err := rows.Scan(&user_id, &username)
+		err := rows.Scan(&follower.UserID, &follower.Username)
 		if err != nil {
 			fmt.Println("____", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "error while scanning username and user_id of follower"})
 			return
 		}
 
-		follower := gin.H{
-			"username": username,
-			"user_id":  user_id,
-		}
-
 		followers = append(followers, follower)
 	}
+	p.Followers = followers
 
 	// following
 	following_query := `SELECT u.user_id, u.username FROM followers f JOIN users u 
@@ -102,30 +85,24 @@ func GetProfile(c *gin.Context) {
 		return
 	}
 
-	var followings []gin.H
+	var followings []models.UserMini
 	for rows.Next() {
-		var username string
-		var user_id int
+		var following models.UserMini
 
-		err := rows.Scan(&user_id, &username)
+		err := rows.Scan(&following.UserID, &following.Username)
 		if err != nil {
 			fmt.Println("____", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "error while scanning username of following"})
 			return
 		}
 
-		following := gin.H{
-			"username": username,
-			"user_id":  user_id,
-		}
-
 		followings = append(followings, following)
 	}
+	p.Followings = followings
 
-	fmt.Println("do_I_follow", currentUserId, " ", user_id)
 	var do_I_follow int
 	do_I_follow_query := `SELECT id FROM followers WHERE following_user_id = $1 AND followed_user_id = $2`
-	err = db.QueryRow(do_I_follow_query, currentUserId, user_id).Scan(&do_I_follow)
+	err = db.QueryRow(do_I_follow_query, currentUserId, p.UserID).Scan(&do_I_follow)
 
 	if err == sql.ErrNoRows {
 		do_I_follow = 0
@@ -137,34 +114,16 @@ func GetProfile(c *gin.Context) {
 		do_I_follow = 1
 	}
 
-	if currentUserId == user_id {
+	if currentUserId == p.UserID {
 		do_I_follow = -1
 	}
+	p.DoIFollow = do_I_follow
 
-	profile := gin.H{
-		"profile_id":     profile_id,
-		"user_id":        user_id,
-		"avatar_url":     avatar_url,
-		"background_url": background_url,
-		"created_on":     created_on,
-		"username":       username,
-		"biodata":        biodata,
-		"followers":      followers,
-		"followings":     followings,
-		"do_I_follow":    do_I_follow,
-	}
-
-	// profile = append(profile, p)
-	// }/
-
-	// if err = rows.Err(); err != nil {
-	// 	fmt.Println("*********", err)
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "Error after retrieving posts"})
-	// 	return
-	// }
-
-	c.JSON(http.StatusOK, gin.H{
-		"profile": profile,
+	c.JSON(http.StatusOK, models.ApiResponse[models.ProfileResponse]{
+		Success: true,
+		Data: models.ProfileResponse{
+			Profile: p,
+		},
 	})
 }
 

@@ -8,23 +8,23 @@ import (
 )
 
 const (
-	host     = "database-1.cn6ui4auk347.eu-north-1.rds.amazonaws.com"
+	host     = "localhost"
 	port     = 5432
 	user     = "postgres"
-	password = "Dheeraj1304"
-	dbname   = "postgres"
+	password = "dheeraj"
+	dbname   = "social"
 )
 
 var DB *sql.DB
 
 func InitDB() (*sql.DB, error) {
 
-	// psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-	// 	"password=%s dbname=%s sslmode=disable",
-	// 	host, port, user, password, dbname)
-	connStr := "host=database-1.cn6ui4auk347.eu-north-1.rds.amazonaws.com port=5432 user=postgres password=Dheeraj1304 dbname=postgres sslmode=require"
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
+	// connStr := "host=database-1.cn6ui4auk347.eu-north-1.rds.amazonaws.com port=5432 user=postgres password=Dheeraj1304 dbname=postgres sslmode=require"
 
-	db, err := sql.Open("postgres", connStr)
+	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		return nil, err
 	}
